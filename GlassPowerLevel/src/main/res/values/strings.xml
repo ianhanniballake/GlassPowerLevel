@@ -1,0 +1,8 @@
+<resources>
+    <string name="app_name">Power Level</string>
+    <string name="background">It\'s over 9000!</string>
+    <string name="battery_level">Battery level at %d%%</string>
+    <string name="menu_mute">Mute</string>
+    <string name="menu_unmute">Unmute</string>
+    <string name="menu_stop">Stop</string>
+</resources>
