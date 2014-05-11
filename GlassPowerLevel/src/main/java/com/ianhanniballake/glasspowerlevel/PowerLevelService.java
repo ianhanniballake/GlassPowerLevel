@@ -21,11 +21,10 @@ public class PowerLevelService extends Service {
     public static final String PREF_PLAY_AUDIO = "pref_play_audio";
 
     private static final String LIVE_CARD_TAG = "power_level";
+    private static final long DELAY_MILLIS = DateUtils.MINUTE_IN_MILLIS;
 
     private LiveCard mLiveCard;
     private RemoteViews mLiveCardView;
-
-    private static final long DELAY_MILLIS = DateUtils.MINUTE_IN_MILLIS;
 
     private CountDownTimer mCountDownTimer = new CountDownTimer(DELAY_MILLIS, DELAY_MILLIS) {
         @Override
@@ -34,28 +33,32 @@ public class PowerLevelService extends Service {
 
         @Override
         public void onFinish() {
-            IntentFilter batteryChangedFilter = new IntentFilter(Intent.ACTION_BATTERY_CHANGED);
-            Intent batteryStatus = registerReceiver(null, batteryChangedFilter);
-            int status = batteryStatus.getIntExtra(BatteryManager.EXTRA_STATUS, -1);
-            int level = batteryStatus.getIntExtra(BatteryManager.EXTRA_LEVEL, -1);
-            int scale = batteryStatus.getIntExtra(BatteryManager.EXTRA_SCALE, -1);
-            int batteryPct = (int)(level / (float)scale * 100);
-            CharSequence powerLevel;
-            switch (status) {
-                case BatteryManager.BATTERY_STATUS_FULL:
-                    powerLevel = getString(R.string.battery_level_full);
-                    break;
-                case BatteryManager.BATTERY_STATUS_CHARGING:
-                    powerLevel = getString(R.string.battery_level_charging, batteryPct);
-                    break;
-                default:
-                    powerLevel = getString(R.string.battery_level, batteryPct);
-            }
-            mLiveCardView.setTextViewText(R.id.power_level, powerLevel);
-            mLiveCard.setViews(mLiveCardView);
+            updateLiveCard();
             mCountDownTimer.start();
         }
     };
+
+    private void updateLiveCard() {
+        IntentFilter batteryChangedFilter = new IntentFilter(Intent.ACTION_BATTERY_CHANGED);
+        Intent batteryStatus = registerReceiver(null, batteryChangedFilter);
+        int status = batteryStatus.getIntExtra(BatteryManager.EXTRA_STATUS, -1);
+        int level = batteryStatus.getIntExtra(BatteryManager.EXTRA_LEVEL, -1);
+        int scale = batteryStatus.getIntExtra(BatteryManager.EXTRA_SCALE, -1);
+        int batteryPct = (int)(level / (float)scale * 100);
+        CharSequence powerLevel;
+        switch (status) {
+            case BatteryManager.BATTERY_STATUS_FULL:
+                powerLevel = getString(R.string.battery_level_full);
+                break;
+            case BatteryManager.BATTERY_STATUS_CHARGING:
+                powerLevel = getString(R.string.battery_level_charging, batteryPct);
+                break;
+            default:
+                powerLevel = getString(R.string.battery_level, batteryPct);
+        }
+        mLiveCardView.setTextViewText(R.id.power_level, powerLevel);
+        mLiveCard.setViews(mLiveCardView);
+    }
 
     @Override
     public IBinder onBind(final Intent intent) {
@@ -83,6 +86,8 @@ public class PowerLevelService extends Service {
                 playAudio();
             }
         } else {
+            // Make sure we have fresh data
+            updateLiveCard();
             mLiveCard.navigate();
         }
         return START_STICKY;
