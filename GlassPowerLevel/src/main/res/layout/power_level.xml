@@ -13,10 +13,9 @@
     <TextView
         android:id="@+id/power_level"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_gravity="bottom"
-        android:background="@color/power_level_background"
-        android:gravity="center_horizontal"
+        android:layout_height="match_parent"
+        android:background="@drawable/background_overlay"
+        android:gravity="center_horizontal|bottom"
         android:paddingBottom="@dimen/card_border"
         android:paddingEnd="@dimen/card_border"
         android:paddingStart="@dimen/card_border"/>
