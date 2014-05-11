@@ -36,10 +36,22 @@ public class PowerLevelService extends Service {
         public void onFinish() {
             IntentFilter batteryChangedFilter = new IntentFilter(Intent.ACTION_BATTERY_CHANGED);
             Intent batteryStatus = registerReceiver(null, batteryChangedFilter);
+            int status = batteryStatus.getIntExtra(BatteryManager.EXTRA_STATUS, -1);
             int level = batteryStatus.getIntExtra(BatteryManager.EXTRA_LEVEL, -1);
             int scale = batteryStatus.getIntExtra(BatteryManager.EXTRA_SCALE, -1);
             int batteryPct = (int)(level / (float)scale * 100);
-            mLiveCardView.setTextViewText(R.id.power_level, getString(R.string.battery_level, batteryPct));
+            CharSequence powerLevel;
+            switch (status) {
+                case BatteryManager.BATTERY_STATUS_FULL:
+                    powerLevel = getString(R.string.battery_level_full);
+                    break;
+                case BatteryManager.BATTERY_STATUS_CHARGING:
+                    powerLevel = getString(R.string.battery_level_charging, batteryPct);
+                    break;
+                default:
+                    powerLevel = getString(R.string.battery_level, batteryPct);
+            }
+            mLiveCardView.setTextViewText(R.id.power_level, powerLevel);
             mLiveCard.setViews(mLiveCardView);
             mCountDownTimer.start();
         }
