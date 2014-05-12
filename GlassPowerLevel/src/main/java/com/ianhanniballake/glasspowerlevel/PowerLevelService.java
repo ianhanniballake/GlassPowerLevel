@@ -5,6 +5,8 @@ import com.google.android.glass.timeline.LiveCard.PublishMode;
 
 import android.app.PendingIntent;
 import android.app.Service;
+import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
@@ -26,6 +28,13 @@ public class PowerLevelService extends Service {
     private LiveCard mLiveCard;
     private RemoteViews mLiveCardView;
 
+    private BroadcastReceiver mPowerChangeReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(final Context context, final Intent intent) {
+            updateLiveCard(intent.getAction());
+        }
+    };
+
     private CountDownTimer mCountDownTimer = new CountDownTimer(DELAY_MILLIS, DELAY_MILLIS) {
         @Override
         public void onTick(final long millisUntilFinished) {
@@ -39,9 +48,25 @@ public class PowerLevelService extends Service {
     };
 
     private void updateLiveCard() {
+        updateLiveCard(null);
+    }
+
+    private void updateLiveCard(String recentAction) {
         IntentFilter batteryChangedFilter = new IntentFilter(Intent.ACTION_BATTERY_CHANGED);
         Intent batteryStatus = registerReceiver(null, batteryChangedFilter);
-        int status = batteryStatus.getIntExtra(BatteryManager.EXTRA_STATUS, -1);
+        if (mLiveCard == null || mLiveCardView == null || batteryStatus == null) {
+            return;
+        }
+        int status;
+        // It appears that recent CONNECTED/DISCONNECTED events may be handled prior to the BATTERY_CHANGED intent
+        // being changed. We manually update the status to ensure we report charging status correctly
+        if (Intent.ACTION_POWER_CONNECTED.equals(recentAction)) {
+            status = BatteryManager.BATTERY_STATUS_CHARGING;
+        } else if (Intent.ACTION_POWER_DISCONNECTED.equals(recentAction)) {
+            status = BatteryManager.BATTERY_STATUS_DISCHARGING;
+        } else {
+            status = batteryStatus.getIntExtra(BatteryManager.EXTRA_STATUS, -1);
+        }
         int level = batteryStatus.getIntExtra(BatteryManager.EXTRA_LEVEL, -1);
         int scale = batteryStatus.getIntExtra(BatteryManager.EXTRA_SCALE, -1);
         int batteryPct = (int)(level / (float)scale * 100);
@@ -63,6 +88,17 @@ public class PowerLevelService extends Service {
     @Override
     public IBinder onBind(final Intent intent) {
         return null;
+    }
+
+    @Override
+    public void onCreate() {
+        super.onCreate();
+
+        // Register the BroadcastReceiver for power connection/disconnection events
+        IntentFilter intentFilter = new IntentFilter();
+        intentFilter.addAction(Intent.ACTION_POWER_CONNECTED);
+        intentFilter.addAction(Intent.ACTION_POWER_DISCONNECTED);
+        registerReceiver(mPowerChangeReceiver, intentFilter);
     }
 
     @Override
@@ -128,6 +164,7 @@ public class PowerLevelService extends Service {
             mLiveCard.unpublish();
             mLiveCard = null;
         }
+        unregisterReceiver(mPowerChangeReceiver);
         super.onDestroy();
     }
 }
