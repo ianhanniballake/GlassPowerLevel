@@ -10,10 +10,20 @@ android {
         versionCode 1
         versionName "1.0"
     }
+
+    signingConfigs {
+        releaseConfig {
+            storeFile System.getenv("KEYSTORE") != null ? file(System.getenv("KEYSTORE")) : null
+            storePassword System.getenv("KEYSTORE_PASSWORD")
+            keyAlias System.getenv("GLASS_POWER_LEVEL_ALIAS")
+            keyPassword System.getenv("GLASS_POWER_LEVEL_PASSWORD")
+        }
+    }
     buildTypes {
         release {
-            runProguard false
+            runProguard true
             proguardFiles getDefaultProguardFile('proguard-android.txt')
+            signingConfig signingConfigs.releaseConfig
         }
     }
 }
